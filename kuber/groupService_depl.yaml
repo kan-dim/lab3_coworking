@@ -1,0 +1,22 @@
+apiVersion:  version1
+kind: Deployment
+metadata:
+  name: groupService
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: groupService
+  template:
+    metadata:
+      labels:
+        app: groupService
+    spec:
+      containers:
+        -
+          image: "groupService:latest"
+          name: groupService
+          ports:
+            -
+              containerPort: 8086
+              name: groupService

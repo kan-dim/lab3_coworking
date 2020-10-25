@@ -1,0 +1,14 @@
+apiVersion:  version1
+kind: Service
+metadata:
+  name: server-ext-connection
+spec:
+  type: LoadBalancer
+  ports:
+    - protocol: TCP
+      port: 8087
+      targetPort: 8087
+      name: http
+      nodePort: 30000
+  selector:
+    app: server

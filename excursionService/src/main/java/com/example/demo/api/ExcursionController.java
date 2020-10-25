@@ -1,7 +1,7 @@
 package com.example.demo.api;
 
 import com.example.demo.classes.service.ExcursionService;
-import com.example.demo.MappingState;
+import com.example.demo.classes.MappingState;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;

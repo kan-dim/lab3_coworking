@@ -1,0 +1,22 @@
+apiVersion:  version1
+kind: Deployment
+metadata:
+  name: managerService
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: managerService
+  template:
+    metadata:
+      labels:
+        app: managerService
+    spec:
+      containers:
+        -
+          image: "managerService:latest"
+          name: managerService
+          ports:
+            -
+              containerPort: 8082
+              name: managerService

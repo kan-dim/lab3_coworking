@@ -1,0 +1,22 @@
+apiVersion:  version1
+kind: Deployment
+metadata:
+  name: excursionService
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: excursionService
+  template:
+    metadata:
+      labels:
+        app: excursionService
+    spec:
+      containers:
+        -
+          image: "excursionService:latest"
+          name: excursionService
+          ports:
+            -
+              containerPort: 8085
+              name: excursionService

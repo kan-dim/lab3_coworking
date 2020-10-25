@@ -1,0 +1,22 @@
+apiVersion:  version1
+kind: Deployment
+metadata:
+  name: guideService
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: guideService
+  template:
+    metadata:
+      labels:
+        app: guideService
+    spec:
+      containers:
+        -
+          image: "guideService:latest"
+          name: guideService
+          ports:
+            -
+              containerPort: 8084
+              name: guideService
