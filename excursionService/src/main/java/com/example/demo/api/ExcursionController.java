@@ -36,7 +36,7 @@ public class ExcursionController {
                                               @RequestParam int duration, @RequestParam int visitors,
                                               @RequestParam String guideName) {
 
-        String address = "http://localhost:8084/guides/";
+        String address = "http://guideService:8084/guides/";
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(address).
                 queryParam("state", MappingState.byName).
