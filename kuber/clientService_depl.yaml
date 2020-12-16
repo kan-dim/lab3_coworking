@@ -1,22 +1,33 @@
-apiVersion:  version1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: clientService
+  name: clientserver-service
 spec:
-  replicas: 1
   selector:
     matchLabels:
-      app: clientService
+      app: clientserver-app
+  replicas: 1
   template:
     metadata:
       labels:
-        app: clientService
+        app: clientserver-app
     spec:
       containers:
-        -
-          image: "clientService:latest"
-          name: clientService
+        - image: client-service
+          name: clientserver-app
+          imagePullPolicy: IfNotPresent
           ports:
-            -
-              containerPort: 8083
-              name: clientService
+            - containerPort: 8083
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: client-service
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 8083
+      protocol: TCP
+      targetPort: 8083
+  selector:
+    app: clientserver-app

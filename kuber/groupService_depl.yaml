@@ -1,22 +1,33 @@
-apiVersion:  version1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: groupService
+  name: groupserver-service
 spec:
-  replicas: 1
   selector:
     matchLabels:
-      app: groupService
+      app: groupserver-app
+  replicas: 1
   template:
     metadata:
       labels:
-        app: groupService
+        app: groupserver-app
     spec:
       containers:
-        -
-          image: "groupService:latest"
-          name: groupService
+        - image: group-service
+          name: groupserver-app
+          imagePullPolicy: IfNotPresent
           ports:
-            -
-              containerPort: 8086
-              name: groupService
+            - containerPort: 8086
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: group-service
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 8086
+      protocol: TCP
+      targetPort: 8086
+  selector:
+    app: groupserver-app

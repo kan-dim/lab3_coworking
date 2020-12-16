@@ -4,6 +4,11 @@ import com.example.demo.classes.MappingState;
 import com.example.demo.classes.people.Client;
 import com.example.demo.classes.people.ClientType;
 import com.example.demo.classes.people.Language;
+import com.example.demo.config.MessagingConfig;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -14,45 +19,60 @@ import org.springframework.web.util.UriComponentsBuilder;
 @RestController
 @RequestMapping(value = "/clients")
 public class ClientController {
-    private final RestTemplate template = new RestTemplate();
-    private final String address = "http://clientService:8083/clients/";
+    @Autowired
+    private RabbitTemplate template;
 
     @GetMapping
-    public ResponseEntity<String> clientsInfo(@RequestParam String name, @RequestParam MappingState state) {
+    public ResponseEntity<String> clientsInfo(@RequestParam String name, @RequestParam MappingState state) throws JSONException {
 
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(address).
-                queryParam("state", state).
-                queryParam("name", name);
-        HttpEntity<String> response = template.exchange(builder.toUriString(), HttpMethod.GET, null, String.class);
+        String method = state == MappingState.all ? "all" : "get";
+        String json = new JSONObject()
+                .put("method", method)
+                .put("body", new JSONObject()
+                        .put("name", name)
+                        .put("state", state)
+                )
+                .toString();
 
 
-        return ResponseEntity.ok(response.getBody());
+        Object obj = template.convertSendAndReceive(MessagingConfig.EXCHANGE, MessagingConfig.ROUTING_KEY_CLIENT, json);
+        return ResponseEntity.ok(obj.toString());
     }
 
     @PostMapping
-    public ResponseEntity<Client> addClient(@RequestParam String name, @RequestParam Language language, ClientType type) {
+    public ResponseEntity<String> addClient(@RequestParam String name, @RequestParam Language language, ClientType type) throws JSONException {
 
 
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(address).
-                queryParam("language", language).
-                queryParam("type", type).
-                queryParam("name", name);
-        HttpEntity<Client> response = template.exchange(builder.toUriString(), HttpMethod.POST, null, Client.class);
+        String method = "post";
+        String json = new JSONObject()
+                .put("method", method)
+                .put("body", new JSONObject()
+                        .put("name", name)
+                        .put("language", language.toString())
+                        .put("type", type.toString())
+                )
+                .toString();
 
 
-        return ResponseEntity.ok(response.getBody());
+        Object obj = template.convertSendAndReceive(MessagingConfig.EXCHANGE, MessagingConfig.ROUTING_KEY_CLIENT, json);
+        return ResponseEntity.ok(obj.toString());
     }
 
 
 
     @DeleteMapping
-    public ResponseEntity<Boolean> deleteClientByName(@RequestParam String name) {
+    public ResponseEntity<String> deleteClientByName(@RequestParam String name) throws JSONException {
 
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(address).
-                queryParam("name", name);
+        String method = "post";
+        String json = new JSONObject()
+                .put("method", method)
+                .put("body", new JSONObject()
+                        .put("name", name)
+                )
+                .toString();
 
-        HttpEntity<Boolean> response = template.exchange(builder.toUriString(), HttpMethod.DELETE, null, Boolean.class);
 
-        return ResponseEntity.ok(response.getBody());
+        Object obj = template.convertSendAndReceive(MessagingConfig.EXCHANGE, MessagingConfig.ROUTING_KEY_CLIENT, json);
+        return ResponseEntity.ok(obj.toString());
     }
 }
