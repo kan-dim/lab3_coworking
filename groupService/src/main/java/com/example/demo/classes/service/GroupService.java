@@ -3,6 +3,7 @@ package com.example.demo.classes.service;
 import com.example.demo.classes.excursion.Сluster;
 import com.example.demo.classes.repos.GroupRepo;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 import java.util.UUID;
@@ -18,7 +19,8 @@ public class GroupService {
     }
 
 
-    public String addNewGroup(int day, int month, UUID managerId, UUID excursionId, String clientsList) {
+    public String addNewGroup(int day, int month, UUID managerId, String clientsList) {
+        UUID excursionId = UUID.fromString("a84efb17-2856-4d3b-b9e1-53725c4dc211");
         if (!checkCorrectData(day, month)) {
             return "INCORRECT DATA";
         }

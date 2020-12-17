@@ -19,14 +19,12 @@ public class MessagingConfig {
     public static final String QUEUE_MANAGER = "manager";
     public static final String ROUTING_KEY_MANAGER = "manager";
 
-    public static final String QUEUE_TODOS = "todosservice";
-    public static final String ROUTING_KEY_TODOS = "todos";
+    public static final String QUEUE_GUIDE = "guide";
+    public static final String ROUTING_KEY_GUIDE = "guide";
 
-    public static final String QUEUE_REPAIR = "repairservice";
-    public static final String ROUTING_KEY_REPAIR = "repair";
 
-    public static final String QUEUE_ORDER = "orderservice";
-    public static final String ROUTING_KEY_ORDER = "order";
+    public static final String QUEUE_GROUP = "group";
+    public static final String ROUTING_KEY_GROUP = "group";
 
 
     @Bean
@@ -44,15 +42,16 @@ public class MessagingConfig {
         return new Queue(QUEUE_MANAGER);
     }
 
-    @Bean(name = "todos")
-    public Queue queue_todos() {
-        return new Queue(QUEUE_TODOS);
+    @Bean(name = "guide")
+    public Queue QUEUE_GUIDE() {
+        return new Queue(QUEUE_GUIDE);
     }
 
-    @Bean(name = "repair")
+    @Bean(name = "group")
     public Queue queue_repair() {
-        return new Queue(QUEUE_REPAIR);
+        return new Queue(QUEUE_GROUP);
     }
+
 
     @Bean
     public Binding bindingC(@Qualifier("client") Queue queueC, TopicExchange exchange) {
@@ -65,14 +64,15 @@ public class MessagingConfig {
     }
 
     @Bean
-    public Binding bindingT(@Qualifier("todos") Queue queueT, TopicExchange exchange) {
-        return BindingBuilder.bind(queueT).to(exchange).with(ROUTING_KEY_TODOS);
+    public Binding bindingT(@Qualifier("guide") Queue queueT, TopicExchange exchange) {
+        return BindingBuilder.bind(queueT).to(exchange).with(ROUTING_KEY_GUIDE);
     }
 
     @Bean
-    public Binding bindingR(@Qualifier("repair") Queue queueT, TopicExchange exchange) {
-        return BindingBuilder.bind(queueT).to(exchange).with(ROUTING_KEY_REPAIR);
+    public Binding bindingR(@Qualifier("group") Queue queueT, TopicExchange exchange) {
+        return BindingBuilder.bind(queueT).to(exchange).with(ROUTING_KEY_GROUP);
     }
+
 
     @Bean
     public MessageConverter converter() {

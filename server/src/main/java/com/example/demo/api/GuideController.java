@@ -1,13 +1,13 @@
 package com.example.demo.api;
 
 import com.example.demo.classes.MappingState;
-import com.example.demo.classes.people.Guide;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
+import com.example.demo.config.MessagingConfig;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.UUID;
 
@@ -15,53 +15,75 @@ import java.util.UUID;
 @RequestMapping(value = "/guides")
 public class GuideController {
 
-    private final RestTemplate template = new RestTemplate();
-    private final String address = "http://guideService:8084/guides/";
+    @Autowired
+    private RabbitTemplate template;
 
     @GetMapping
-    public ResponseEntity<String> guiderInfo(@RequestParam String name, @RequestParam MappingState state) {
+    public ResponseEntity<String> guiderInfo(@RequestParam String name, @RequestParam MappingState state) throws JSONException {
 
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(address).
-                queryParam("state", state).
-                queryParam("name", name);
-        HttpEntity<String> response = template.exchange(builder.toUriString(), HttpMethod.GET, null, String.class);
+        
+        String method = state == MappingState.byName ? "get" : state.toString();
+        String json = new JSONObject()
+                .put("method", method)
+                .put("body", new JSONObject()
+                        .put("name", name)
+                )
+                .toString();
 
 
-        return ResponseEntity.ok(response.getBody());
+        Object obj = template.convertSendAndReceive(MessagingConfig.EXCHANGE, MessagingConfig.ROUTING_KEY_GUIDE, json);
+        return ResponseEntity.ok(obj.toString());
     }
 
 
 
     @PostMapping
-    public ResponseEntity<Guide> addNewGuide(@RequestParam String name, @RequestParam boolean knowEnglish) {
+    public ResponseEntity<String> addNewGuide(@RequestParam String name, @RequestParam boolean knowEnglish) throws JSONException {
 
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(address).
-                queryParam("knowEnglish", knowEnglish).
-                queryParam("name", name);
-        HttpEntity<Guide> response = template.exchange(builder.toUriString(), HttpMethod.POST, null, Guide.class);
+        String method = "post";
+        String json = new JSONObject()
+                .put("method", method)
+                .put("body", new JSONObject()
+                        .put("name", name)
+                        .put("knowEnglish", knowEnglish)
+                )
+                .toString();
+
+        System.out.println(json);
 
 
-        return ResponseEntity.ok(response.getBody());
+        Object obj = template.convertSendAndReceive(MessagingConfig.EXCHANGE, MessagingConfig.ROUTING_KEY_GUIDE, json);
+        return ResponseEntity.ok(obj.toString());
     }
 
     @DeleteMapping
-    public ResponseEntity<Boolean> deleteManagerByName(@RequestParam String name) {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(address).
-                queryParam("name", name);
+    public ResponseEntity<String> deleteManagerByName(@RequestParam String name) throws JSONException {
+        String method = "delete";
+        String json = new JSONObject()
+                .put("method", method)
+                .put("body", new JSONObject()
+                        .put("name", name)
+                )
+                .toString();
 
-        HttpEntity<Boolean> response = template.exchange(builder.toUriString(), HttpMethod.DELETE, null, Boolean.class);
 
-        return ResponseEntity.ok(response.getBody());
+        Object obj = template.convertSendAndReceive(MessagingConfig.EXCHANGE, MessagingConfig.ROUTING_KEY_GUIDE, json);
+        return ResponseEntity.ok(obj.toString());
     }
 
     @PutMapping
-    public ResponseEntity<Boolean> toggleFreeGuideState(@RequestParam UUID id) {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(address).
-                queryParam("id", id);
+    public ResponseEntity<String> toggleFreeGuideState(@RequestParam UUID id) throws JSONException {
+        String method = "put";
+        String json = new JSONObject()
+                .put("method", method)
+                .put("body", new JSONObject()
+                        .put("id", id)
+                )
+                .toString();
 
-        HttpEntity<Boolean> response = template.exchange(builder.toUriString(), HttpMethod.PUT, null, Boolean.class);
 
-        return ResponseEntity.ok(response.getBody());
+        Object obj = template.convertSendAndReceive(MessagingConfig.EXCHANGE, MessagingConfig.ROUTING_KEY_GUIDE, json);
+        return ResponseEntity.ok(obj.toString());
     }
 
 

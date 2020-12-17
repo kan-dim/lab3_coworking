@@ -1,49 +1,65 @@
 package com.example.demo.api;
-import com.example.demo.classes.people.Manager;
+
 import com.example.demo.classes.MappingState;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
+import com.example.demo.config.MessagingConfig;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
 @RestController
 @RequestMapping(value = "/managers")
 public class ManagerController {
 
-    private final RestTemplate template = new RestTemplate();
-    private final String address = "http://managerService:8082/managers/";
+    @Autowired
+    private RabbitTemplate template;
 
     @GetMapping
-    public ResponseEntity<String> managersInfo(@RequestParam String name, @RequestParam MappingState state) {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(address).
-                queryParam("state", state).
-                queryParam("name", name);
-        HttpEntity<String> response = template.exchange(builder.toUriString(), HttpMethod.GET, null, String.class);
+    public ResponseEntity<String> managersInfo(@RequestParam String name, @RequestParam MappingState state) throws JSONException {
+        String method = state == MappingState.all ? "all" : "get";
+        String json = new JSONObject()
+                .put("method", method)
+                .put("body", new JSONObject()
+                        .put("name", name)
+                )
+                .toString();
 
 
-        return ResponseEntity.ok(response.getBody());
+        Object obj = template.convertSendAndReceive(MessagingConfig.EXCHANGE, MessagingConfig.ROUTING_KEY_MANAGER, json);
+        return ResponseEntity.ok(obj.toString());
     }
 
     @PostMapping
-    public ResponseEntity<Manager> addManager(@RequestParam String name, @RequestParam boolean knowEnglish) {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(address).
-                queryParam("knowEnglish", knowEnglish).
-                queryParam("name", name);
-        HttpEntity<Manager> response = template.exchange(builder.toUriString(), HttpMethod.POST, null, Manager.class);
+    public ResponseEntity<String> addManager(@RequestParam String name, @RequestParam boolean knowEnglish) throws JSONException {
+        String method = "post";
+        String json = new JSONObject()
+                .put("method", method)
+                .put("body", new JSONObject()
+                        .put("name", name)
+                        .put("knowEnglish", knowEnglish)
+                )
+                .toString();
 
 
-        return ResponseEntity.ok(response.getBody());
+        Object obj = template.convertSendAndReceive(MessagingConfig.EXCHANGE, MessagingConfig.ROUTING_KEY_MANAGER, json);
+        return ResponseEntity.ok(obj.toString());
     }
 
     @DeleteMapping
-    public ResponseEntity<Boolean> deleteManagerByName(@RequestParam String name) {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(address).
-                queryParam("name", name);
+    public ResponseEntity<String> deleteManagerByName(@RequestParam String name) throws JSONException {
 
-        HttpEntity<Boolean> response = template.exchange(builder.toUriString(), HttpMethod.DELETE, null, Boolean.class);
+        String method = "delete";
+        String json = new JSONObject()
+                .put("method", method)
+                .put("body", new JSONObject()
+                        .put("name", name)
+                )
+                .toString();
 
-        return ResponseEntity.ok(response.getBody());
+
+        Object obj = template.convertSendAndReceive(MessagingConfig.EXCHANGE, MessagingConfig.ROUTING_KEY_MANAGER, json);
+        return ResponseEntity.ok(obj.toString());
     }
 }

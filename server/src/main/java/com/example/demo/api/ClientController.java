@@ -1,7 +1,6 @@
 package com.example.demo.api;
 
 import com.example.demo.classes.MappingState;
-import com.example.demo.classes.people.Client;
 import com.example.demo.classes.people.ClientType;
 import com.example.demo.classes.people.Language;
 import com.example.demo.config.MessagingConfig;
@@ -9,12 +8,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
 @RestController
 @RequestMapping(value = "/clients")
@@ -30,7 +25,6 @@ public class ClientController {
                 .put("method", method)
                 .put("body", new JSONObject()
                         .put("name", name)
-                        .put("state", state)
                 )
                 .toString();
 
@@ -63,7 +57,7 @@ public class ClientController {
     @DeleteMapping
     public ResponseEntity<String> deleteClientByName(@RequestParam String name) throws JSONException {
 
-        String method = "post";
+        String method = "delete";
         String json = new JSONObject()
                 .put("method", method)
                 .put("body", new JSONObject()

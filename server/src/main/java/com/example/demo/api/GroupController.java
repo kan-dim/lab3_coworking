@@ -1,58 +1,72 @@
 package com.example.demo.api;
 
 import com.example.demo.classes.MappingState;
+import com.example.demo.config.MessagingConfig;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.UUID;
-
 
 @RestController
 @RequestMapping(value = "/groups")
 public class GroupController {
 
-    private final RestTemplate template = new RestTemplate();
-    private final String address = "http://groupService:8086/groups/";
+    @Autowired
+    private RabbitTemplate template;
 
     @GetMapping
-    public ResponseEntity<String> excursionInfo(@RequestParam UUID id, @RequestParam MappingState state) {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(address).
-                queryParam("state", state).
-                queryParam("id", id);
-        HttpEntity<String> response = template.exchange(builder.toUriString(), HttpMethod.GET, null, String.class);
+    public ResponseEntity<String> excursionInfo(@RequestParam(defaultValue = "00000000-0000-0000-0000-000000000000") UUID id, @RequestParam MappingState state) throws JSONException {
+        String method = state == MappingState.all ? "all" : "get";
+        String json = new JSONObject()
+                .put("method", method)
+                .put("body", new JSONObject()
+                        .put("id", id)
+                )
+                .toString();
 
 
-        return ResponseEntity.ok(response.getBody());
+        Object obj = template.convertSendAndReceive(MessagingConfig.EXCHANGE, MessagingConfig.ROUTING_KEY_GROUP, json);
+        return ResponseEntity.ok(obj.toString());
     }
 
     @PostMapping
     public ResponseEntity<String> addNewGroup(@RequestParam int day, @RequestParam int month,
-                                              @RequestParam String clientsList, @RequestParam UUID managerId,
-                                              @RequestParam UUID excursionId) {
+                                              @RequestParam String clientsList, @RequestParam UUID managerId) throws JSONException {
 
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(address).
-                queryParam("day", day).
-                queryParam("month", month).
-                queryParam("managerId", managerId).
-                queryParam("excursionId", excursionId).
-                queryParam("clientsList", clientsList);
-        HttpEntity<String> response = template.exchange(builder.toUriString(), HttpMethod.POST, null, String.class);
+            String method = "post";
+            String json = new JSONObject()
+                    .put("method", method)
+                    .put("body", new JSONObject()
+                            .put("day", day)
+                            .put("month", month)
+                            .put("managerId", managerId)
+                            .put("clientsList", clientsList)
+                    )
+                    .toString();
 
-
-        return ResponseEntity.ok(response.getBody());
+        Object obj = template.convertSendAndReceive(MessagingConfig.EXCHANGE, MessagingConfig.ROUTING_KEY_GROUP, json);
+        return ResponseEntity.ok(obj.toString());
     }
 
     @DeleteMapping
-    public ResponseEntity<Boolean> deleteGroupByDId(@RequestParam UUID id) {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(address).
-                queryParam("id", id);
+    public ResponseEntity<String> deleteGroupByDId(@RequestParam UUID id) throws JSONException {
+        String method = "delete";
+        String json = new JSONObject()
+                .put("method", method)
+                .put("body", new JSONObject()
+                        .put("id", id)
+                )
+                .toString();
 
-        HttpEntity<Boolean> response = template.exchange(builder.toUriString(), HttpMethod.DELETE, null, Boolean.class);
 
-        return ResponseEntity.ok(response.getBody());
+        Object obj = template.convertSendAndReceive(MessagingConfig.EXCHANGE, MessagingConfig.ROUTING_KEY_GROUP, json);
+        return ResponseEntity.ok(obj.toString());
     }
 }

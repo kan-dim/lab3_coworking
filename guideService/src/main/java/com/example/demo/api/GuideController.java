@@ -1,16 +1,19 @@
 package com.example.demo.api;
 
 import com.example.demo.classes.service.GuideService;
-import com.example.demo.classes.MappingState;
-import com.example.demo.classes.people.Guide;
+import com.example.demo.config.MessagingConfig;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.stereotype.Component;
 
+import java.util.Map;
 import java.util.UUID;
 
-@RestController
-@RequestMapping(value = "/guides")
+@Component
 public class GuideController {
 
     private final GuideService service;
@@ -20,30 +23,32 @@ public class GuideController {
         this.service = service;
     }
 
-    @GetMapping
-    public ResponseEntity<String> guiderInfo(@RequestParam String name, @RequestParam MappingState state) {
-        if (state == MappingState.all) return ResponseEntity.ok(service.guideInfo());
-        if (state == MappingState.free) return ResponseEntity.ok(service.getFreeGuides());
-        if (state == MappingState.byName) return ResponseEntity.ok(service.getGuideIdByName(name));
-        return ResponseEntity.ok(service.getGuideByName(name));
+    @RabbitListener(queues = MessagingConfig.QUEUE)
+    public Object handleRequest(String request) throws JsonProcessingException {
+
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> map = mapper.readValue(request, Map.class);
+
+        String jsonString = null;
+
+        try {
+            jsonString = new JSONObject(map.get("body").toString()).toString();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        Map<String, Object> body = mapper.readValue(jsonString, Map.class);
+
+
+        String method = (String) map.get("method");
+        return switch (method) {
+            case "all" -> service.guideInfo();
+            case "free" -> service.getFreeGuides();
+            case "get" -> service.getGuideIdByName((String) body.get("name"));
+            case "post" -> service.addNewGuide((String) body.get("name"), "true" == body.get("knowEnglish").toString());
+            case "delete" -> service.deleteGuideByName((String) body.get("name"));
+            case "put" -> service.toggleGuideFreeState(UUID.fromString((String) body.get("id")));
+            default -> "";
+        };
     }
-
-
-
-    @PostMapping
-    public ResponseEntity<Guide> addNewGuide(@RequestParam String name, @RequestParam boolean knowEnglish) {
-        return ResponseEntity.ok(service.addNewGuide(name, knowEnglish));
-    }
-
-    @DeleteMapping
-    public ResponseEntity<Boolean> deleteManagerByName(@RequestParam String name) {
-        return ResponseEntity.ok(service.deleteGuideByName(name));
-    }
-
-    @PutMapping
-    public ResponseEntity<Boolean> toggleFreeGuideState(@RequestParam UUID id) {
-        return ResponseEntity.ok(service.toggleGuideFreeState(id));
-    }
-
-
 }

@@ -2,15 +2,22 @@ package com.example.demo.api;
 
 import com.example.demo.classes.service.GroupService;
 import com.example.demo.classes.MappingState;
+import com.example.demo.config.MessagingConfig;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 
-@RestController
-@RequestMapping(value = "/groups")
+@Component
 public class GroupController {
 
     private final GroupService service;
@@ -20,21 +27,31 @@ public class GroupController {
         this.service = service;
     }
 
-    @GetMapping
-    public ResponseEntity<String> excursionInfo(@RequestParam UUID id, @RequestParam MappingState state) {
-        if (state == MappingState.all) return ResponseEntity.ok(service.groupsInfo());
-        return ResponseEntity.ok(service.getGroupById(id));
-    }
+    @RabbitListener(queues = MessagingConfig.QUEUE)
+    public Object handleRequest(String request) throws JsonProcessingException {
 
-    @PostMapping
-    public ResponseEntity<String> addNewGroup(@RequestParam int day, @RequestParam int month,
-                                              @RequestParam String clientsList, @RequestParam UUID managerId,
-                                              @RequestParam UUID excursionId) {
-        return ResponseEntity.ok(service.addNewGroup(day, month, managerId, excursionId, clientsList));
-    }
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> map = mapper.readValue(request, Map.class);
 
-    @DeleteMapping
-    public ResponseEntity<Boolean> deleteGroupByDId(@RequestParam UUID id) {
-        return ResponseEntity.ok(service.deleteGroupById(id));
+        String jsonString = null;
+
+        try {
+            jsonString = new JSONObject(map.get("body").toString()).toString();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        Map<String, Object> body = mapper.readValue(jsonString, Map.class);
+
+
+        String method = (String) map.get("method");
+        return switch (method) {
+            case "all" -> service.groupsInfo();
+            case "get" -> service.getGroupById(UUID.fromString((String) body.get("id")));
+            case "post" -> service.addNewGroup(Integer.parseInt(body.get("day").toString()), Integer.parseInt(body.get("month").toString()),
+                    UUID.fromString((String) body.get("managerId")),(String) body.get("clientsList"));
+            case "delete" -> service.deleteGroupById(UUID.fromString((String) body.get("id")));
+            default -> "";
+        };
     }
 }
